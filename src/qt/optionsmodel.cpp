@@ -1,11 +1,12 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
+// Copyright (c) 2018-2019 The CCBC developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h"
+#include "config/ccbc-config.h"
 #endif
 
 #include "optionsmodel.h"
@@ -18,7 +19,6 @@
 #include "main.h"
 #include "net.h"
 #include "txdb.h" // for -dbcache defaults
-#include "util.h"
 
 #ifdef ENABLE_WALLET
 #include "masternodeconfig.h"
@@ -62,7 +62,7 @@ void OptionsModel::Init()
 
     // Display
     if (!settings.contains("nDisplayUnit"))
-        settings.setValue("nDisplayUnit", BitcoinUnits::PIV);
+        settings.setValue("nDisplayUnit", BitcoinUnits::CCBC);
     nDisplayUnit = settings.value("nDisplayUnit").toInt();
 
     if (!settings.contains("strThirdPartyTxUrls"))
@@ -73,10 +73,6 @@ void OptionsModel::Init()
         settings.setValue("fHideZeroBalances", true);
     fHideZeroBalances = settings.value("fHideZeroBalances").toBool();
 
-    if (!settings.contains("fHideOrphans"))
-        settings.setValue("fHideOrphans", false);
-    fHideOrphans = settings.value("fHideOrphans").toBool();
-
     if (!settings.contains("fCoinControlFeatures"))
         settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
@@ -84,10 +80,6 @@ void OptionsModel::Init()
     if (!settings.contains("fZeromintEnable"))
         settings.setValue("fZeromintEnable", true);
     fEnableZeromint = settings.value("fZeromintEnable").toBool();
-
-    if (!settings.contains("fEnableAutoConvert"))
-        settings.setValue("fEnableAutoConvert", true);
-    fEnableAutoConvert = settings.value("fEnableAutoConvert").toBool();
 
     if (!settings.contains("nZeromintPercentage"))
         settings.setValue("nZeromintPercentage", 10);
@@ -97,10 +89,10 @@ void OptionsModel::Init()
         settings.setValue("nPreferredDenom", 0);
     nPreferredDenom = settings.value("nPreferredDenom", "0").toLongLong();
 
-    if (!settings.contains("nAnonymizePivxAmount"))
-        settings.setValue("nAnonymizePivxAmount", 1000);
+    if (!settings.contains("nAnonymizeCCBCAmount"))
+        settings.setValue("nAnonymizeCCBCAmount", 1000);
 
-    nAnonymizePivxAmount = settings.value("nAnonymizePivxAmount").toLongLong();
+    nAnonymizeCCBCAmount = settings.value("nAnonymizeCCBCAmount").toLongLong();
 
     if (!settings.contains("fShowMasternodesTab"))
         settings.setValue("fShowMasternodesTab", masternodeConfig.getCount());
@@ -133,7 +125,6 @@ void OptionsModel::Init()
 #endif
     if (!settings.contains("nStakeSplitThreshold"))
         settings.setValue("nStakeSplitThreshold", 1);
-
 
     // Network
     if (!settings.contains("fUseUPnP"))
@@ -170,14 +161,12 @@ void OptionsModel::Init()
 
     if (settings.contains("fZeromintEnable"))
         SoftSetBoolArg("-enablezeromint", settings.value("fZeromintEnable").toBool());
-    if (settings.contains("fEnableAutoConvert"))
-        SoftSetBoolArg("-enableautoconvertaddress", settings.value("fEnableAutoConvert").toBool());
     if (settings.contains("nZeromintPercentage"))
         SoftSetArg("-zeromintpercentage", settings.value("nZeromintPercentage").toString().toStdString());
     if (settings.contains("nPreferredDenom"))
         SoftSetArg("-preferredDenom", settings.value("nPreferredDenom").toString().toStdString());
-    if (settings.contains("nAnonymizePivxAmount"))
-        SoftSetArg("-anonymizepivxamount", settings.value("nAnonymizePivxAmount").toString().toStdString());
+    if (settings.contains("nAnonymizeCCBCAmount"))
+        SoftSetArg("-anonymizeccbcamount", settings.value("nAnonymizeCCBCAmount").toString().toStdString());
 
     language = settings.value("language").toString();
 }
@@ -188,7 +177,7 @@ void OptionsModel::Reset()
 
     // Remove all entries from our QSettings object
     settings.clear();
-    resetSettings = true; // Needed in pivx.cpp during shotdown to also remove the window positions
+    resetSettings = true; // Needed in ccbc.cpp during shotdown to also remove the window positions
 
     // default setting for OptionsModel::StartAtStartup - disabled
     if (GUIUtil::GetStartOnSystemStartup())
@@ -262,18 +251,14 @@ QVariant OptionsModel::data(const QModelIndex& index, int role) const
             return settings.value("nThreadsScriptVerif");
         case HideZeroBalances:
             return settings.value("fHideZeroBalances");
-        case HideOrphans:
-            return settings.value("fHideOrphans");
         case ZeromintEnable:
             return QVariant(fEnableZeromint);
-        case ZeromintAddresses:
-            return QVariant(fEnableAutoConvert);
         case ZeromintPercentage:
             return QVariant(nZeromintPercentage);
         case ZeromintPrefDenom:
             return QVariant(nPreferredDenom);
-        case AnonymizePivxAmount:
-            return QVariant(nAnonymizePivxAmount);
+        case AnonymizeCCBCAmount:
+            return QVariant(nAnonymizeCCBCAmount);
         case Listen:
             return settings.value("fListen");
         default:
@@ -353,6 +338,7 @@ bool OptionsModel::setData(const QModelIndex& index, const QVariant& value, int 
             settings.setValue("nStakeSplitThreshold", value.toInt());
             setStakeSplitThreshold(value.toInt());
             break;
+
         case DisplayUnit:
             setDisplayUnit(value);
             break;
@@ -386,10 +372,6 @@ bool OptionsModel::setData(const QModelIndex& index, const QVariant& value, int 
             settings.setValue("fZeromintEnable", fEnableZeromint);
             emit zeromintEnableChanged(fEnableZeromint);
             break;
-        case ZeromintAddresses:
-            fEnableAutoConvert = value.toBool();
-            settings.setValue("fEnableAutoConvert", fEnableAutoConvert);
-            emit zeromintAddressesChanged(fEnableAutoConvert);
         case ZeromintPercentage:
             nZeromintPercentage = value.toInt();
             settings.setValue("nZeromintPercentage", nZeromintPercentage);
@@ -405,15 +387,11 @@ bool OptionsModel::setData(const QModelIndex& index, const QVariant& value, int 
             settings.setValue("fHideZeroBalances", fHideZeroBalances);
             emit hideZeroBalancesChanged(fHideZeroBalances);
             break;
-        case HideOrphans:
-            fHideOrphans = value.toBool();
-            settings.setValue("fHideOrphans", fHideOrphans);
-            emit hideOrphansChanged(fHideOrphans);
-            break;
-        case AnonymizePivxAmount:
-            nAnonymizePivxAmount = value.toInt();
-            settings.setValue("nAnonymizePivxAmount", nAnonymizePivxAmount);
-            emit anonymizePivxAmountChanged(nAnonymizePivxAmount);
+
+        case AnonymizeCCBCAmount:
+            nAnonymizeCCBCAmount = value.toInt();
+            settings.setValue("nAnonymizeCCBCAmount", nAnonymizeCCBCAmount);
+            emit anonymizeCCBCAmountChanged(nAnonymizeCCBCAmount);
             break;
         case CoinControlFeatures:
             fCoinControlFeatures = value.toBool();

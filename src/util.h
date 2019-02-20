@@ -1,8 +1,8 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2011-2014 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
-// Distributed under the MIT software license, see the accompanying
+// Copyright (c) 2018-2019 The CCBC developers
+// Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 /**
@@ -13,7 +13,7 @@
 #define BITCOIN_UTIL_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h"
+#include "config/ccbc-config.h"
 #endif
 
 #include "compat.h"
@@ -28,9 +28,8 @@
 
 #include <boost/filesystem/path.hpp>
 #include <boost/thread/exceptions.hpp>
-#include <boost/thread/condition_variable.hpp> // for boost::thread_interrupted
 
-//PIVX only features
+//CCBC only features
 
 extern bool fMasterNode;
 extern bool fLiteMode;
@@ -39,10 +38,9 @@ extern int nSwiftTXDepth;
 extern int nZeromintPercentage;
 extern const int64_t AUTOMINT_DELAY;
 extern int nPreferredDenom;
-extern int nAnonymizePivxAmount;
+extern int nAnonymizeCCBCAmount;
 extern int nLiquidityProvider;
 extern bool fEnableZeromint;
-extern bool fEnableAutoConvert;
 extern int64_t enforceMasternodePaymentsTime;
 extern std::string strMasterNodeAddr;
 extern int keysLoaded;
@@ -62,7 +60,6 @@ extern bool fLogIPs;
 extern volatile bool fReopenDebugLog;
 
 void SetupEnvironment();
-bool SetupNetworking();
 
 /** Return true if log accepts specified category */
 bool LogAcceptCategory(const char* category);
@@ -108,8 +105,6 @@ static inline bool error(const char* format)
     return false;
 }
 
-double double_safe_addition(double fValue, double fIncrement);
-double double_safe_multiplication(double fValue, double fmultiplicator);
 void PrintExceptionContinue(std::exception* pex, const char* pszThread);
 void ParseParameters(int argc, const char* const argv[]);
 void FileCommit(FILE* fileout);
@@ -214,7 +209,7 @@ void RenameThread(const char* name);
 template <typename Callable>
 void TraceThread(const char* name, Callable func)
 {
-    std::string s = strprintf("pivx-%s", name);
+    std::string s = strprintf("ccbc-%s", name);
     RenameThread(s.c_str());
     try {
         LogPrintf("%s thread start\n", name);

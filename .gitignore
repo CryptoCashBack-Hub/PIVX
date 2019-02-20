@@ -1,4 +1,3 @@
-.gitignore
 *.sublime-project
 *.sublime-workspace
 todo.txt
@@ -7,12 +6,12 @@ reset-files.bash
 *.tar.gz
 
 *.exe
-src/pivx
-src/pivxd
-src/pivx-cli
-src/pivx-tx
-src/test/test_pivx
-src/qt/test/test_pivx-qt
+src/poseidon
+src/poseidond
+src/poseidon-cli
+src/poseidon-tx
+src/test/test_poseidon
+src/qt/test/test_poseidon-qt
 
 # autoreconf
 Makefile.in
@@ -38,8 +37,8 @@ confdefs.h
 conftest.cpp
 conftest.err
 libtool
-src/config/pivx-config.h
-src/config/pivx-config.h.in
+src/config/poseidon-config.h
+src/config/poseidon-config.h.in
 src/config/stamp-h1
 share/setup.nsi
 share/qt/Info.plist
@@ -64,8 +63,7 @@ src/qt/test/moc*.cpp
 *.pyc
 *.o
 *.o-*
-*.patch
-.pivx
+.poseidon
 *.a
 *.pb.cc
 *.pb.h
@@ -84,13 +82,12 @@ src/qt/test/moc*.cpp
 # Compilation and Qt preprocessor part
 *.qm
 Makefile
-pivx-qt
-PIVX-Qt.app
-background.tiff*
+poseidon-qt
+poseidon-Qt.app
 
 # Unit-tests
 Makefile.test
-pivx-qt_test
+poseidon-qt_test
 src/test/buildenv.py
 
 # Resources cpp
@@ -106,7 +103,7 @@ build
 #lcov
 *.gcno
 /*.info
-test_pivx.coverage/
+test_poseidon.coverage/
 total.coverage/
 coverage_percent.txt
 
@@ -114,8 +111,6 @@ coverage_percent.txt
 linux-coverage-build
 linux-build
 win32-build
-test/config.ini
-test/cache/*
 qa/pull-tester/run-bitcoind-for-test.sh
 qa/pull-tester/tests-config.sh
 qa/pull-tester/cache/*
@@ -127,7 +122,45 @@ qa/pull-tester/test.*/*
 .project
 /doc/doxygen/
 /nbproject/
-libbitcoinconsensus.pc
+
 .idea
 CMakeLists.txt
 cmake-build-debug
+config.log
+config.status
+.vs/ccbc/v15/.suo
+.vs/ccbc/v15/Browse.VC.db
+.vs/ccbc/v15/Browse.VC.opendb
+.vs/ccbc/v15/ipch/AutoPCH/6128fda3004a16a7/HISTOGRAM.ipch
+.vs/ccbc/v15/ipch/AutoPCH/867168a137692ac6/MASTERNODEMAN.ipch
+.vs/ProjectSettings.json
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
+.vs/CCBC/v15/ipch/AutoPCH/39e800a96980bfb0/TRANSACTIONRECORD.ipch
+.vs/CCBC/v15/ipch/AutoPCH/3e4badd4568fd837/NET.ipch
+.vs/CCBC/v15/ipch/AutoPCH/47ea7bab20a03820/RPCCLIENT.ipch
+.vs/CCBC/v15/ipch/AutoPCH/5acf5b26d7b06fe7/RPCCONSOLE.ipch
+.vs/CCBC/v15/ipch/AutoPCH/5bd79ca3052e20c2/NETBASE.ipch
+.vs/CCBC/v15/ipch/AutoPCH/9e59def887d3f8e9/NOTIFICATOR.ipch
+.vs/CCBC/v15/ipch/AutoPCH/bac51a75c75f068e/RPCNET.ipch
+.vs/CCBC/v15/ipch/AutoPCH/cd51b7a38a10eaac/TRAFFICGRAPHWIDGET.ipch
+.vs/CCBC/v15/ipch/AutoPCH/cf13db34be1232da/INIT.ipch
+.vs/CCBC/v15/ipch/AutoPCH/d04b48ec25101b9c/TRANSACTIONDESC.ipch
+.vs/CCBC/v15/ipch/AutoPCH/da9e7932fe7625fd/SCHEDULER.ipch
+.vs/CCBC/v15/ipch/AutoPCH/db308ae62eb1061d/WALLETMODELTRANSACTION.ipch
+.vs/CCBC/v15/ipch/AutoPCH/dbdd799cdbf5c2b3/ABITCOINGUI.ipch
+.vs/CCBC/v15/ipch/AutoPCH/e391866a0dc9dccb/BLOCKEXPLORER.ipch
+.vs/CCBC/v15/ipch/AutoPCH/fb4db16ec65083b9/OVERVIEWPAGE.ipch
+.vs/CCBC/v15/ipch/AutoPCH/ffe96ac68f786478/POW.ipch
+.vs/config/applicationhost.config
+.vs/CCBC/v15/ipch/AutoPCH/78d5b3ed1536249e/BITCOINGUI.ipch
+.vs/CCBC/v15/ipch/AutoPCH/7af4be6023f44dd6/MASTERNODEMAN.ipch
+.vs/CCBC/v15/ipch/AutoPCH/77d567438d4ebca2/POW.ipch
+.vs/CCBC/v15/ipch/AutoPCH/6a677560f076cf6a/ECCRYPTOVERIFY.ipch
+.vs/CCBC/v15/ipch/AutoPCH/e042c7e57ec7e763/SPORKDB.ipch
+.vs/CCBC/v15/ipch/AutoPCH/7b8ccf850bb7f73/RPCMINING.ipch
+.vs/CCBC/v15/ipch/AutoPCH/e71fa6fdd808a0a6/GUIUTIL.ipch
+.vs/CCBC/v15/ipch/AutoPCH/63b13b8b930a30d5/RPCMASTERNODE.ipch
+.vs/CCBC/v15/ipch/AutoPCH/4c8aca488cd61cc9/KERNEL.ipch
+.vs/CCBC/v15/ipch/AutoPCH/9a0c471bdb4f68f4/BITCOINGUI.ipch
+.vs/CCBC/v15/ipch/AutoPCH/de16c9db64876cd3/KERNEL.ipch

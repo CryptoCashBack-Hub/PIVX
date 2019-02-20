@@ -1,12 +1,13 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2011-2014 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
+// Copyright (c) 2018-2019 The CCBC developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h"
+#include "config/ccbc-config.h"
 #endif
 
 #include "net.h"
@@ -68,7 +69,7 @@ struct ListenSocket {
 
     ListenSocket(SOCKET socket, bool whitelisted) : socket(socket), whitelisted(whitelisted) {}
 };
-}
+} // namespace
 
 //
 // Global state variables
@@ -78,6 +79,7 @@ bool fListen = true;
 uint64_t nLocalServices = NODE_NETWORK;
 CCriticalSection cs_mapLocalHost;
 map<CNetAddr, LocalServiceInfo> mapLocalHost;
+//static bool vfReachable[NET_MAX] = {};
 static bool vfLimited[NET_MAX] = {};
 static CNode* pnodeLocalHost = NULL;
 uint64_t nLocalHostNonce = 0;
@@ -85,7 +87,6 @@ static std::vector<ListenSocket> vhListenSocket;
 CAddrMan addrman;
 int nMaxConnections = 125;
 bool fAddressesInitialized = false;
-std::string strSubVersion;
 
 vector<CNode*> vNodes;
 CCriticalSection cs_vNodes;
@@ -238,6 +239,16 @@ void AdvertizeLocal(CNode* pnode)
     }
 }
 
+/*
+void SetReachable(enum Network net, bool fFlag)
+{
+    LOCK(cs_mapLocalHost);
+    vfReachable[net] = fFlag;
+    if (net == NET_IPV6 && fFlag)
+        vfReachable[NET_IPV4] = true;
+}
+*/
+
 // learn a new local address
 bool AddLocal(const CService& addr, int nScore)
 {
@@ -260,6 +271,7 @@ bool AddLocal(const CService& addr, int nScore)
             info.nScore = nScore + (fAlready ? 1 : 0);
             info.nPort = addr.GetPort();
         }
+        //SetReachable(addr.GetNetwork());
     }
 
     return true;
@@ -322,6 +334,7 @@ bool IsLocal(const CService& addr)
 bool IsReachable(enum Network net)
 {
     LOCK(cs_mapLocalHost);
+    //return vfReachable[net] && !vfLimited[net];
     return !vfLimited[net];
 }
 
@@ -356,8 +369,8 @@ CNode* FindNode(const CSubNet& subNet)
 {
     LOCK(cs_vNodes);
     for (CNode* pnode : vNodes)
-    if (subNet.Match((CNetAddr)pnode->addr))
-        return (pnode);
+        if (subNet.Match((CNetAddr)pnode->addr))
+            return (pnode);
     return NULL;
 }
 
@@ -410,7 +423,7 @@ CNode* ConnectNode(CAddress addrConnect, const char* pszDest, bool obfuScationMa
         pszDest ? 0.0 : (double)(GetAdjustedTime() - addrConnect.nTime) / 3600.0);
 
     // Connect
-    SOCKET hSocket = INVALID_SOCKET;;
+    SOCKET hSocket;
     bool proxyConnectionFailed = false;
     if (pszDest ? ConnectSocketByName(addrConnect, hSocket, pszDest, Params().GetDefaultPort(), nConnectTimeout, &proxyConnectionFailed) :
                   ConnectSocket(addrConnect, hSocket, nConnectTimeout, &proxyConnectionFailed)) {
@@ -484,7 +497,7 @@ void CNode::PushVersion()
     else
         LogPrint("net", "send version message: version %d, blocks=%d, us=%s, peer=%d\n", PROTOCOL_VERSION, nBestHeight, addrMe.ToString(), id);
     PushMessage("version", PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
-        nLocalHostNonce, strSubVersion, nBestHeight, true);
+        nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight, true);
 }
 
 
@@ -508,12 +521,11 @@ bool CNode::IsBanned(CNetAddr ip)
     bool fResult = false;
     {
         LOCK(cs_setBanned);
-        for (banmap_t::iterator it = setBanned.begin(); it != setBanned.end(); it++)
-        {
+        for (banmap_t::iterator it = setBanned.begin(); it != setBanned.end(); it++) {
             CSubNet subNet = (*it).first;
             CBanEntry banEntry = (*it).second;
 
-            if(subNet.Match(ip) && GetTime() < banEntry.nBanUntil)
+            if (subNet.Match(ip) && GetTime() < banEntry.nBanUntil)
                 fResult = true;
         }
     }
@@ -535,51 +547,49 @@ bool CNode::IsBanned(CSubNet subnet)
     return fResult;
 }
 
-void CNode::Ban(const CNetAddr& addr, const BanReason &banReason, int64_t bantimeoffset, bool sinceUnixEpoch)
+void CNode::Ban(const CNetAddr& addr, const BanReason& banReason, int64_t bantimeoffset, bool sinceUnixEpoch)
 {
     CSubNet subNet(addr);
     Ban(subNet, banReason, bantimeoffset, sinceUnixEpoch);
 }
 
-void CNode::Ban(const CSubNet& subNet, const BanReason &banReason, int64_t bantimeoffset, bool sinceUnixEpoch)
+void CNode::Ban(const CSubNet& subNet, const BanReason& banReason, int64_t bantimeoffset, bool sinceUnixEpoch)
 {
     CBanEntry banEntry(GetTime());
     banEntry.banReason = banReason;
-    if (bantimeoffset <= 0)
-    {
-        bantimeoffset = GetArg("-bantime", 60*60*24); // Default 24-hour ban
+    if (bantimeoffset <= 0) {
+        bantimeoffset = GetArg("-bantime", 60 * 60 * 24); // Default 24-hour ban
         sinceUnixEpoch = false;
     }
-    banEntry.nBanUntil = (sinceUnixEpoch ? 0 : GetTime() )+bantimeoffset;
+    banEntry.nBanUntil = (sinceUnixEpoch ? 0 : GetTime()) + bantimeoffset;
 
     {
         LOCK(cs_setBanned);
         if (setBanned[subNet].nBanUntil < banEntry.nBanUntil) {
             setBanned[subNet] = banEntry;
             setBannedIsDirty = true;
-        }
-        else
+        } else
             return;
     }
     uiInterface.BannedListChanged();
     {
         LOCK(cs_vNodes);
-        BOOST_FOREACH(CNode* pnode, vNodes) {
+        BOOST_FOREACH (CNode* pnode, vNodes) {
             if (subNet.Match((CNetAddr)pnode->addr))
                 pnode->fDisconnect = true;
         }
     }
-    if(banReason == BanReasonManuallyAdded)
+    if (banReason == BanReasonManuallyAdded)
         DumpBanlist(); //store banlist to disk immediately if user requested ban
 }
 
-bool CNode::Unban(const CNetAddr &addr)
+bool CNode::Unban(const CNetAddr& addr)
 {
     CSubNet subNet(addr);
     return Unban(subNet);
 }
 
-bool CNode::Unban(const CSubNet &subNet)
+bool CNode::Unban(const CSubNet& subNet)
 {
     {
         LOCK(cs_setBanned);
@@ -592,13 +602,13 @@ bool CNode::Unban(const CSubNet &subNet)
     return true;
 }
 
-void CNode::GetBanned(banmap_t &banMap)
+void CNode::GetBanned(banmap_t& banMap)
 {
     LOCK(cs_setBanned);
     banMap = setBanned; //create a thread safe copy
 }
 
-void CNode::SetBanned(const banmap_t &banMap)
+void CNode::SetBanned(const banmap_t& banMap)
 {
     LOCK(cs_setBanned);
     setBanned = banMap;
@@ -613,23 +623,20 @@ void CNode::SweepBanned()
     {
         LOCK(cs_setBanned);
         banmap_t::iterator it = setBanned.begin();
-        while(it != setBanned.end())
-        {
+        while (it != setBanned.end()) {
             CSubNet subNet = (*it).first;
             CBanEntry banEntry = (*it).second;
-            if(now > banEntry.nBanUntil)
-            {
+            if (now > banEntry.nBanUntil) {
                 setBanned.erase(it++);
                 setBannedIsDirty = true;
                 notifyUI = true;
                 LogPrint("net", "%s: Removed banned node ip/subnet from banlist.dat: %s\n", __func__, subNet.ToString());
-            }
-            else
+            } else
                 ++it;
         }
     }
     // update UI
-    if(notifyUI) {
+    if (notifyUI) {
         uiInterface.BannedListChanged();
     }
 }
@@ -696,7 +703,7 @@ void CNode::copyStats(CNodeStats& stats)
         nPingUsecWait = GetTimeMicros() - nPingUsecStart;
     }
 
-    // Raw ping time is in microseconds, but show it to user as whole seconds (PIVX users should be well used to small numbers with many decimal places by now :)
+    // Raw ping time is in microseconds, but show it to user as whole seconds (CCBC users should be well used to small numbers with many decimal places by now :)
     stats.dPingTime = (((double)nPingUsecTime) / 1e6);
     stats.dPingWait = (((double)nPingUsecWait) / 1e6);
 
@@ -895,7 +902,7 @@ void ThreadSocketHandler()
             LOCK(cs_vNodes);
             vNodesSize = vNodes.size();
         }
-        if(vNodesSize != nPrevNodeCount) {
+        if (vNodesSize != nPrevNodeCount) {
             nPrevNodeCount = vNodesSize;
             uiInterface.NotifyNumConnectionsChanged(nPrevNodeCount);
         }
@@ -1158,7 +1165,7 @@ void ThreadMapPort()
             }
         }
 
-        string strDesc = "PIVX " + FormatFullVersion();
+        string strDesc = "CCBC " + FormatFullVersion();
 
         try {
             while (true) {
@@ -1284,6 +1291,7 @@ void DumpData()
     DumpBanlist();
 }
 
+
 void static ProcessOneShot()
 {
     string strDest;
@@ -1362,7 +1370,7 @@ void ThreadOpenConnections()
 
         int nTries = 0;
         while (true) {
-            CAddrInfo addr = addrman.Select();
+            CAddress addr = addrman.Select();
 
             // if we selected an invalid address, restart
             if (!addr.IsValid() || setConnected.count(addr.GetGroup()) || IsLocal(addr))
@@ -1636,7 +1644,7 @@ bool BindListenPort(const CService& addrBind, string& strError, bool fWhiteliste
     if (::bind(hListenSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR) {
         int nErr = WSAGetLastError();
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to %s on this computer. PIVX Core is probably already running."), addrBind.ToString());
+            strError = strprintf(_("Unable to bind to %s on this computer. CCBC Core is probably already running."), addrBind.ToString());
         else
             strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %s)"), addrBind.ToString(), NetworkErrorString(nErr));
         LogPrintf("%s\n", strError);
@@ -1715,19 +1723,16 @@ void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler)
             LogPrintf("Invalid or missing peers.dat; recreating\n");
     }
 
+
     //try to read stored banlist
     CBanDB bandb;
     banmap_t banmap;
     if (!bandb.Read(banmap))
         LogPrintf("Invalid or missing banlist.dat; recreating\n");
 
-    CNode::SetBanned(banmap); //thread save setter
+    CNode::SetBanned(banmap);        //thread save setter
     CNode::SetBannedSetDirty(false); //no need to write down just read or nonexistent data
-    CNode::SweepBanned(); //sweap out unused entries
-
-    // Initialize random numbers. Even when rand() is only usable for trivial use-cases most nodes should have a different
-    // seed after all the file-IO done at this point. Should be good enough even when nodes are started via scripts.
-    srand(time(NULL));
+    CNode::SweepBanned();            //sweap out unused entries
 
     LogPrintf("Loaded %i addresses from peers.dat  %dms\n",
         addrman.size(), GetTimeMillis() - nStart);
@@ -1889,8 +1894,8 @@ void RelayTransactionLockReq(const CTransaction& tx, bool relayToAll)
 void RelayInv(CInv& inv)
 {
     LOCK(cs_vNodes);
-    BOOST_FOREACH (CNode* pnode, vNodes){
-        if((pnode->nServices == NODE_BLOOM_WITHOUT_MN || pnode->nServices == NODE_BLOOM_LIGHT_ZC) && inv.IsMasterNodeType())continue;
+    BOOST_FOREACH (CNode* pnode, vNodes) {
+        if ((pnode->nServices == NODE_BLOOM_WITHOUT_MN) && inv.IsMasterNodeType()) continue;
         if (pnode->nVersion >= ActiveProtocol())
             pnode->PushInventory(inv);
     }
@@ -2175,10 +2180,8 @@ void CNode::EndMessage() UNLOCK_FUNCTION(cs_vSend)
     if (mapArgs.count("-fuzzmessagestest"))
         Fuzz(GetArg("-fuzzmessagestest", 10));
 
-    if (ssSend.size() == 0) {
-	    LEAVE_CRITICAL_SECTION(cs_vSend);
+    if (ssSend.size() == 0)
         return;
-    }
 
     // Set the size
     unsigned int nSize = ssSend.size() - CMessageHeader::HEADER_SIZE;
@@ -2229,7 +2232,7 @@ bool CBanDB::Write(const banmap_t& banSet)
 
     // open temp output file, and associate with CAutoFile
     boost::filesystem::path pathTmp = GetDataDir() / tmpfn;
-    FILE *file = fopen(pathTmp.string().c_str(), "wb");
+    FILE* file = fopen(pathTmp.string().c_str(), "wb");
     CAutoFile fileout(file, SER_DISK, CLIENT_VERSION);
     if (fileout.IsNull())
         return error("%s: Failed to open file %s", __func__, pathTmp.string());
@@ -2237,8 +2240,7 @@ bool CBanDB::Write(const banmap_t& banSet)
     // Write and commit header, data
     try {
         fileout << ssBanlist;
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         return error("%s: Serialize or I/O error - %s", __func__, e.what());
     }
     FileCommit(fileout.Get());
@@ -2254,7 +2256,7 @@ bool CBanDB::Write(const banmap_t& banSet)
 bool CBanDB::Read(banmap_t& banSet)
 {
     // open input file, and associate with CAutoFile
-    FILE *file = fopen(pathBanlist.string().c_str(), "rb");
+    FILE* file = fopen(pathBanlist.string().c_str(), "rb");
     CAutoFile filein(file, SER_DISK, CLIENT_VERSION);
     if (filein.IsNull())
         return error("%s: Failed to open file %s", __func__, pathBanlist.string());
@@ -2271,10 +2273,9 @@ bool CBanDB::Read(banmap_t& banSet)
 
     // read data and checksum from file
     try {
-        filein.read((char *)&vchData[0], dataSize);
+        filein.read((char*)&vchData[0], dataSize);
         filein >> hashIn;
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s", __func__, e.what());
     }
     filein.fclose();
@@ -2297,8 +2298,7 @@ bool CBanDB::Read(banmap_t& banSet)
 
         // de-serialize address data into one CAddrMan object
         ssBanlist >> banSet;
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         return error("%s: Deserialize or I/O error - %s", __func__, e.what());
     }
 

@@ -1,8 +1,8 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2011-2014 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
-// Distributed under the MIT software license, see the accompanying
+// Copyright (c) 2018-2019 The CCBC developers
+// Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_CHAINPARAMS_H
@@ -26,7 +26,7 @@ struct CDNSSeedData {
 
 /**
  * CChainParams defines various tweakable parameters of a given instance of the
- * PIVX system. There are three: the main network on which people trade goods
+ * CCBC system. There are three: the main network on which people trade goods
  * and services, the public test network which gets reset from time to time and
  * a regression test mode which is intended for private networks only. It has
  * minimal difficulty to ensure that blocks can be found instantly.
@@ -60,6 +60,7 @@ public:
     /** Used if GenerateBitcoins is called with a negative number of threads */
     int DefaultMinerThreads() const { return nMinerThreads; }
     const CBlock& GenesisBlock() const { return genesis; }
+    bool RequireRPCPassword() const { return fRequireRPCPassword; }
     /** Make miner wait to have peers to avoid wasting work */
     bool MiningRequiresPeers() const { return fMiningRequiresPeers; }
     /** Headers first syncing is disabled */
@@ -79,6 +80,8 @@ public:
     CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
     /** The masternode count that we will allow the see-saw reward payments to be off by */
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }
+	// Stake inputs
+	CAmount StakeInputMinimal() const { return nStakeInputMinimal; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
     bool MineBlocksOnDemand() const { return fMineBlocksOnDemand; }
     /** In the future use NetworkIDString() for RPC fields */
@@ -91,7 +94,8 @@ public:
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
 
-    /** Spork key and Masternode Handling **/
+	//Spork Related items
+    //std::string SporkKey() const { return strSporkKey; }
     std::string SporkKey() const { return strSporkKey; }
     std::string SporkKeyOld() const { return strSporkKeyOld; }
     int64_t NewSporkStart() const { return nEnforceNewSporkKey; }
@@ -104,27 +108,41 @@ public:
 
     /** Zerocoin **/
     std::string Zerocoin_Modulus() const { return zerocoinModulus; }
-    libzerocoin::ZerocoinParams* Zerocoin_Params(bool useModulusV1) const;
+    libzerocoin::ZerocoinParams* Zerocoin_Params() const;
     int Zerocoin_MaxSpendsPerTransaction() const { return nMaxZerocoinSpendsPerTransaction; }
     CAmount Zerocoin_MintFee() const { return nMinZerocoinMintFee; }
     int Zerocoin_MintRequiredConfirmations() const { return nMintRequiredConfirmations; }
     int Zerocoin_RequiredAccumulation() const { return nRequiredAccumulation; }
     int Zerocoin_DefaultSpendSecurity() const { return nDefaultSecurityLevel; }
     int Zerocoin_HeaderVersion() const { return nZerocoinHeaderVersion; }
-    int Zerocoin_RequiredStakeDepth() const { return nZerocoinRequiredStakeDepth; }
-
-    /** Height or Time Based Activations **/
-    int ModifierUpgradeBlock() const { return nModifierUpdateBlock; }
-    int LAST_POW_BLOCK() const { return nLastPOWBlock; }
     int Zerocoin_StartHeight() const { return nZerocoinStartHeight; }
     int Zerocoin_Block_EnforceSerialRange() const { return nBlockEnforceSerialRange; }
     int Zerocoin_Block_RecalculateAccumulators() const { return nBlockRecalculateAccumulators; }
     int Zerocoin_Block_FirstFraudulent() const { return nBlockFirstFraudulent; }
     int Zerocoin_Block_LastGoodCheckpoint() const { return nBlockLastGoodCheckpoint; }
     int Zerocoin_StartTime() const { return nZerocoinStartTime; }
-    int Block_Enforce_Invalid() const { return nBlockEnforceInvalidUTXO; }
-    int Zerocoin_Block_V2_Start() const { return nBlockZerocoinV2; }
-    CAmount InvalidAmountFiltered() const { return nInvalidAmountFiltered; };
+    int Zerocoin_AccumulatorStartHeight() const { return nAccumulatorStartHeight; }
+
+    /** Height or Time Based Activations **/
+    int ModifierUpgradeBlock() const { return nModifierUpdateBlock; }
+    int LAST_POW_BLOCK() const { return nLastPOWBlock; }
+
+    int DGW_POS_FORK_BLOCK() const { return nPOSDGWForkBlock; }
+    int64_t getPOSTargetSpacing() const { return nPOSTargetSpacing; }
+    const uint256& getPOSWorkLimit() const { return bnPOSWorkLimit; }
+
+	//Central Collateral Amount
+	int MasternodeCollateralAmt() const { return nMasternodeCollateralAmt; }
+
+	//Treasury Code
+	std::string vTreasuryRewardAddress;
+    std::string vReviveRewardAddress;
+    std::string vRewardsAddress;        
+    std::string GetTreasuryRewardAddressAtHeight(int height) const;
+    CScript GetTreasuryRewardScriptAtHeight(int height) const;
+    std::string GetReviveRewardAddressAtHeight(int height) const;
+    CScript GetReviveRewardScriptAtHeight(int height) const;
+    int REVIVE_DEV_FEE_CHANGE() const { return nEndOfReviveFailSafe; }
 
 protected:
     CChainParams() {}
@@ -134,6 +152,8 @@ protected:
     //! Raw pub key bytes for the broadcast alert signing key.
     std::vector<unsigned char> vAlertPubKey;
     int nDefaultPort;
+    uint256 bnPOSWorkLimit;
+	int nMasternodeCollateralAmt;
     uint256 bnProofOfWorkLimit;
     int nMaxReorganizationDepth;
     int nSubsidyHalvingInterval;
@@ -142,8 +162,12 @@ protected:
     int nToCheckBlockUpgradeMajority;
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
+    int64_t nPOSTargetSpacing;
+    int nPOSDGWForkBlock;
+    int nEndOfReviveFailSafe;
     int nLastPOWBlock;
     int nMasternodeCountDrift;
+	CAmount nStakeInputMinimal;
     int nMaturity;
     int nModifierUpdateBlock;
     CAmount nMaxMoneyOut;
@@ -154,6 +178,7 @@ protected:
     std::string strNetworkID;
     CBlock genesis;
     std::vector<CAddress> vFixedSeeds;
+    bool fRequireRPCPassword;
     bool fMiningRequiresPeers;
     bool fAllowMinDifficultyBlocks;
     bool fDefaultConsistencyChecks;
@@ -163,31 +188,30 @@ protected:
     bool fTestnetToBeDeprecatedFieldRPC;
     bool fHeadersFirstSyncingActive;
     int nPoolMaxTransactions;
+
+    //std::string strSporkKey;
     std::string strSporkKey;
     std::string strSporkKeyOld;
     int64_t nEnforceNewSporkKey;
     int64_t nRejectOldSporkKey;
+
     std::string strObfuscationPoolDummyAddress;
     int64_t nStartMasternodePayments;
     std::string zerocoinModulus;
     int nMaxZerocoinSpendsPerTransaction;
     CAmount nMinZerocoinMintFee;
-    CAmount nInvalidAmountFiltered;
     int nMintRequiredConfirmations;
     int nRequiredAccumulation;
     int nDefaultSecurityLevel;
     int nZerocoinHeaderVersion;
     int64_t nBudget_Fee_Confirmations;
     int nZerocoinStartHeight;
-    int nZerocoinStartTime;
-    int nZerocoinRequiredStakeDepth;
-
     int nBlockEnforceSerialRange;
     int nBlockRecalculateAccumulators;
     int nBlockFirstFraudulent;
     int nBlockLastGoodCheckpoint;
-    int nBlockEnforceInvalidUTXO;
-    int nBlockZerocoinV2;
+    int nZerocoinStartTime;
+    int nAccumulatorStartHeight;
 };
 
 /**

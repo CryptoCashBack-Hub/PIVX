@@ -1,7 +1,8 @@
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2011-2014 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
-// Copyright (c) 2015-2017 The PIVX developers
-// Distributed under the MIT software license, see the accompanying
+// Copyright (c) 2015-2018 The PIVX developers
+// Copyright (c) 2018-2019 The CCBC developers
+// Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "checkpoints.h"
@@ -27,7 +28,7 @@ static const double SIGCHECK_VERIFICATION_FACTOR = 5.0;
 
 bool fEnabled = true;
 
-bool CheckBlock(int nHeight, const uint256& hash, bool fMatchesCheckpoint)
+bool CheckBlock(int nHeight, const uint256& hash)
 {
     if (!fEnabled)
         return true;
@@ -35,8 +36,7 @@ bool CheckBlock(int nHeight, const uint256& hash, bool fMatchesCheckpoint)
     const MapCheckpoints& checkpoints = *Params().Checkpoints().mapCheckpoints;
 
     MapCheckpoints::const_iterator i = checkpoints.find(nHeight);
-    // If looking for an exact match, then return false
-    if (i == checkpoints.end()) return !fMatchesCheckpoint;
+    if (i == checkpoints.end()) return true;
     return hash == i->second;
 }
 

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=CCBC
+Comment=CCBC P2P Cryptocurrency
+Comment[fr]=CCBC, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=CCBC, eşten eşe kriptografik sanal para birimi
+Exec=ccbc-qt %u
+Terminal=false
+Type=Application
+Icon=ccbc128
+MimeType=x-scheme-handler/ccbc;
+Categories=Office;Finance;

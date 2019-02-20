@@ -1,6 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2016-2017 The PIVX developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,6 +10,42 @@ using namespace std;
 /**
  * CChain implementation
  */
+
+int64_t CChain::GetNetworkHashPS(int lookup, int height)
+{
+    CBlockIndex* pb = this->Tip();
+
+    if (height >= 0 && height < this->Height())
+        pb = vChain[height];
+
+    if (!(pb && pb->nHeight))
+        return 0;
+
+    CBlockIndex* pb0 = pb;
+    int64_t minTime = pb0->GetBlockTime();
+    int64_t maxTime = minTime;
+
+    for (int i = lookup <= 0 ? std::numeric_limits<int>::max() : lookup; i && pb0->pprev; --i) {
+        if (lookup <= 0 && pb0->pprev->nBits != pb->nBits)
+            break;
+
+        pb0 = pb0->pprev;
+        int64_t time = pb0->GetBlockTime();
+        minTime = std::min(time, minTime);
+        maxTime = std::max(time, maxTime);
+    }
+
+    // In case there's a situation where minTime == maxTime, we don't want a divide by zero exception.
+    if (minTime == maxTime)
+        return 0;
+
+    uint256 workDiff = pb->nChainWork - pb0->nChainWork;
+    int64_t timeDiff = maxTime - minTime;
+
+    return workDiff.getdouble() / timeDiff;
+}
+
+
 void CChain::SetTip(CBlockIndex* pindex)
 {
     if (pindex == NULL) {

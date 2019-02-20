@@ -1,7 +1,8 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2015-2017 The PIVX developers
-// Distributed under the MIT software license, see the accompanying
+// Copyright (c) 2011-2014 The Bitcoin developers
+// Copyright (c) 2014-2015 The Dash developers
+// Copyright (c) 2015-2018 The PIVX developers
+// Copyright (c) 2018-2019 The CCBC developers
+// Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_CHAIN_H
@@ -17,6 +18,7 @@
 #include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 
 struct CDiskBlockPos {
     int nFile;
@@ -346,7 +348,7 @@ public:
     unsigned int GetStakeEntropyBit() const
     {
         unsigned int nEntropyBit = ((GetBlockHash().Get64()) & 1);
-        if (GetBoolArg("-printstakemodifier", false))
+        if (fDebug || GetBoolArg("-printstakemodifier", false))
             LogPrintf("GetStakeEntropyBit: nHeight=%u hashBlock=%s nEntropyBit=%u\n", nHeight, GetBlockHash().ToString().c_str(), nEntropyBit);
 
         return nEntropyBit;
@@ -536,6 +538,8 @@ public:
         }
         return pindex;
     }
+
+	 int64_t GetNetworkHashPS(int lookup, int height);
 
     /** Returns the index entry at a particular height in this chain, or NULL if no such height exists. */
     CBlockIndex* operator[](int nHeight) const

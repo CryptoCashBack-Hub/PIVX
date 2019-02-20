@@ -1,5 +1,4 @@
 // Copyright (c) 2009-2013 The Bitcoin developers
-// Copyright (c) 2017 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,7 +6,7 @@
 #define BITCOIN_NETBASE_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h"
+#include "config/ccbc-config.h"
 #endif
 
 #include "compat.h"
@@ -123,6 +122,7 @@ public:
 
     //constructor for single ip subnet (<ipv4>/32 or <ipv6>/128)
     explicit CSubNet(const CNetAddr &addr);
+ 
 
     bool Match(const CNetAddr& addr) const;
 
@@ -132,10 +132,10 @@ public:
     friend bool operator==(const CSubNet& a, const CSubNet& b);
     friend bool operator!=(const CSubNet& a, const CSubNet& b);
     friend bool operator<(const CSubNet& a, const CSubNet& b);
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
+ 
+     ADD_SERIALIZE_METHODS;
+ 
+     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(network);
         READWRITE(FLATDATA(netmask));

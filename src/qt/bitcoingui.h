@@ -1,5 +1,4 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
-// Copyright (c) 2017-2018 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,7 +6,7 @@
 #define BITCOIN_QT_BITCOINGUI_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/pivx-config.h"
+#include "config/ccbc-config.h"
 #endif
 
 #include "amount.h"
@@ -84,9 +83,7 @@ private:
 
     UnitDisplayStatusBarControl* unitDisplayControl;
     QLabel* labelStakingIcon;
-    QPushButton* labelAutoMintIcon;
     QPushButton* labelEncryptionIcon;
-    QLabel* labelTorIcon;
     QPushButton* labelConnectionsIcon;
     QLabel* labelBlocksIcon;
     QLabel* progressBarLabel;
@@ -109,7 +106,6 @@ private:
     QAction* multisigSignAction;
     QAction* aboutAction;
     QAction* receiveCoinsAction;
-    QAction* governanceAction;
     QAction* privacyAction;
     QAction* optionsAction;
     QAction* toggleHideAction;
@@ -184,10 +180,9 @@ public slots:
     */
     void message(const QString& title, const QString& message, unsigned int style, bool* ret = NULL);
 
-#ifdef ENABLE_WALLET
     void setStakingStatus();
-    void setAutoMintStatus();
 
+#ifdef ENABLE_WALLET
     /** Set the encryption status as shown in the UI.
        @param[in] status            current encryption status
        @see WalletModel::EncryptionStatus
@@ -200,18 +195,12 @@ public slots:
     void incomingTransaction(const QString& date, int unit, const CAmount& amount, const QString& type, const QString& address);
 #endif // ENABLE_WALLET
 
-private:
-    /** Set the Tor-enabled icon as shown in the UI. */
-    void updateTorIcon();
-
 private slots:
 #ifdef ENABLE_WALLET
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */
     void gotoHistoryPage();
-    /** Switch to Governance Page */
-    void gotoGovernancePage();
     /** Switch to Explorer Page */
     void gotoBlockExplorerPage();
     /** Switch to masternode page */
